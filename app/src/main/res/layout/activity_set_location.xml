@@ -28,7 +28,8 @@
         android:background="@color/colorPrimaryDark"
         android:textColor="@color/colorPrimary"
         android:text="NEXT"
-        android:id="@+id/button"
+        android:id="@+id/nxtBtn"
+        android:onClick="nextBtnClick"
         android:layout_gravity="center_horizontal" />
 
 </LinearLayout>

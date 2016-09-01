@@ -113,7 +113,7 @@ public class CYM_UTILITY {
 
     public static String getText(Activity activity, int id) {
         EditText et = (EditText) activity.findViewById(id);
-        return et.getText().toString();
+        return et.getText().toString().trim();
     }
 
     public static void setText(Activity activity, int id, String text) {
@@ -166,6 +166,13 @@ public class CYM_UTILITY {
         builder.setMessage(message);
         builder.setNegativeButton("CANCEL", null);
         builder.setPositiveButton("OK", clickListener);
+        builder.show();
+    }
+
+    public static void mAlertDialog(String message, Activity context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(message);
+        builder.setNegativeButton("OK", null);
         builder.show();
     }
 

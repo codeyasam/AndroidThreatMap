@@ -1,6 +1,7 @@
 package com.projects.codeyasam.threatmap;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -9,6 +10,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -152,5 +154,14 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
             setMapMarkerOnce(latLng);
         }
         return false;
+    }
+
+    public void nextBtnClick(View v) {
+        if (marker == null) {
+            CYM_UTILITY.mAlertDialog("Tap the map or click the current location button to set your address/location", SetLocation.this);
+            return;
+        }
+        Intent intent = new Intent(getApplicationContext(), SetLoginDetails.class);
+        startActivity(intent);
     }
 }

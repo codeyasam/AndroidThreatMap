@@ -40,11 +40,7 @@
         </activity>
         <activity
             android:name=".SetLocation"
-            android:label="Set address/location">
-            <meta-data
-                android:name="com.google.android.geo.API_KEY"
-                android:value="@string/google_maps_key" />
-        </activity>
+            android:label="Set address/location"></activity>
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").
@@ -57,6 +53,7 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
+        <activity android:name=".SetLoginDetails"></activity>
     </application>
 
 </manifest>
