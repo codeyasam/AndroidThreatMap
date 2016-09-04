@@ -47,6 +47,14 @@
             android:ems="10"
             android:id="@+id/password" />
 
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Confirm Password"
+            android:inputType="textPassword"
+            android:ems="10"
+            android:id="@+id/confPass" />
+
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -4,10 +4,12 @@ import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ public class RegisterActivity extends AppCompatActivity {
     private static final int SELECT_FILE = 888;
     private static final int REQUEST_CAMERA = 777;
 
+    private SharedPreferences settings;
     public static Client_TM clientObj = new Client_TM();
 
     @Override
@@ -27,6 +30,16 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
         Client_TM.setDefaultImage(RegisterActivity.this, R.id.displayPicture, R.drawable.defaultavatar);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        settings = PreferenceManager.getDefaultSharedPreferences(RegisterActivity.this);
+        String clientId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+        if (!clientId.isEmpty()) {
+            finish();
+        }
     }
 
     public void nextBtnClick(View v) {

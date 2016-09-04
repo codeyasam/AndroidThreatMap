@@ -34,6 +34,9 @@ import java.net.URL;
  */
 public class CYM_UTILITY {
 
+    //public static final String THREAT_MAP_ROOT_URL = "http://codeyasam.com/threatmap/";
+    public static final String THREAT_MAP_ROOT_URL = "http://192.168.42.156/threatmap/";
+
     public static Bitmap getRoundedCornerBitmap(Bitmap bitmap) {
         Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
                 bitmap.getHeight(), Bitmap.Config.ARGB_8888);

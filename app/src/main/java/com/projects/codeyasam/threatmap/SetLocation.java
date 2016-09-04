@@ -1,9 +1,15 @@
 package com.projects.codeyasam.threatmap;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
+import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -28,6 +34,14 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
 public class SetLocation extends AppCompatActivity implements OnMapReadyCallback,
         GoogleMap.OnMapClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMyLocationButtonClickListener {
 
@@ -35,6 +49,9 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private Marker marker;
+    private double mLat;
+    private double mLng;
+    private SharedPreferences settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,11 +83,15 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
-    private void setupGmapsAutocompleteFragment() {
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        settings = PreferenceManager.getDefaultSharedPreferences(SetLocation.this);
+        String clientId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+        if (!clientId.isEmpty()) {
+            finish();
+        }
     }
-
-
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -93,6 +114,8 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
 
     @Override
     public void onMapClick(LatLng latLng) {
+        mLat = latLng.latitude;
+        mLng = latLng.longitude;
         setMapMarkerOnce(latLng);
     }
 
@@ -150,7 +173,9 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public boolean onMyLocationButtonClick() {
         if (mLastLocation != null) {
-            LatLng latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            mLat = mLastLocation.getLatitude();
+            mLng = mLastLocation.getLongitude();
+            LatLng latLng = new LatLng(mLat, mLng);
             setMapMarkerOnce(latLng);
         }
         return false;
@@ -161,7 +186,75 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
             CYM_UTILITY.mAlertDialog("Tap the map or click the current location button to set your address/location", SetLocation.this);
             return;
         }
-        Intent intent = new Intent(getApplicationContext(), SetLoginDetails.class);
-        startActivity(intent);
+        AddressLocationGetter addressLocationGetter = new AddressLocationGetter(mLat, mLng);
+        addressLocationGetter.execute();
+    }
+
+    public static String geoCodingMakeUrl(String lat, String lng) {
+        StringBuilder urlString = new StringBuilder();
+        urlString.append("https://maps.googleapis.com/maps/api/geocode/json");
+        urlString.append("?latlng=");
+        urlString.append(lat);
+        urlString.append(",");
+        urlString.append(lng);
+        urlString.append("&key=AIzaSyDDpPDWu9z820FMYyOVsAphuy0ryz4kt2o");
+        return urlString.toString();
+    }
+
+    class AddressLocationGetter extends AsyncTask<String, String, String> {
+
+        private double lat;
+        private double lng;
+        private String url;
+        private ProgressDialog progressDialog;
+
+        public AddressLocationGetter(double lat, double lng) {
+            this.lat = lat;
+            this.lng = lng;
+            this.url = geoCodingMakeUrl(String.valueOf(lat), String.valueOf(lng));
+            RegisterActivity.clientObj.setLat(String.valueOf(lat));
+            RegisterActivity.clientObj.setLng(String.valueOf(lng));
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(SetLocation.this);
+            progressDialog.setMessage("Fetching your address, Please wait...");
+            progressDialog.setIndeterminate(true);
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                JSONObject json = JSONParser.getJSONfromURL(url);
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                try {
+                    final JSONObject json = new JSONObject(result);
+                    JSONObject firstIndexResult = json.getJSONArray("results").getJSONObject(0);
+                    RegisterActivity.clientObj.setAddress(firstIndexResult.getString("formatted_address"));
+                    //Log.i("poop", RegisterActivity.clientObj.getAddress());
+                    Intent intent = new Intent(getApplicationContext(), SetLoginDetails.class);
+                    startActivity(intent);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }
     }
 }
