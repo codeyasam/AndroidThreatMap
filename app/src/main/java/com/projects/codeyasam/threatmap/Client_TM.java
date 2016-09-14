@@ -148,6 +148,10 @@ public class Client_TM {
         this.identificationNo = identificationNo;
     }
 
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
     public static void setDefaultImage(Activity activity, int id, int drawable) {
         ImageView ivImage = (ImageView) activity.findViewById(id);
         Bitmap bm = BitmapFactory.decodeResource(activity.getResources(), drawable);

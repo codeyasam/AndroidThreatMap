@@ -12,6 +12,13 @@
     tools:context="com.projects.codeyasam.threatmap.LoginActivity">
 
 
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/imageView"
+        android:layout_gravity="center_horizontal"
+        android:src="@drawable/mlogo"/>
+
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

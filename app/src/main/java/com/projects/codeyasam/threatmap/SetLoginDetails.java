@@ -1,5 +1,6 @@
 package com.projects.codeyasam.threatmap;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
@@ -28,10 +29,13 @@ public class SetLoginDetails extends AppCompatActivity {
         setContentView(R.layout.activity_set_login_details);
 
         if (RegisterActivity.clientObj.getDisplayPicture() != null) {
-            CYM_UTILITY.setImageOnView(SetLoginDetails.this, R.id.displayPicture, RegisterActivity.clientObj.getDisplayPicture());
+            Bitmap bmp = CYM_UTILITY.getRoundedCornerBitmap(RegisterActivity.clientObj.getDisplayPicture());
+            CYM_UTILITY.setImageOnView(SetLoginDetails.this, R.id.displayPicture, bmp);
         } else {
             Client_TM.setDefaultImage(SetLoginDetails.this, R.id.displayPicture, R.drawable.defaultavatar);
         }
+        String fullName = RegisterActivity.clientObj.getFullName();
+        CYM_UTILITY.displayText(SetLoginDetails.this, R.id.fullName, fullName);
     }
 
     public void regClick(View v) {
@@ -57,9 +61,20 @@ public class SetLoginDetails extends AppCompatActivity {
     public class RegisterHandler extends AsyncTask<String, String, String> {
 
         private Client_TM clientObj;
+        private ProgressDialog progressDialog;
 
         public RegisterHandler(Client_TM clientObj) {
             this.clientObj = clientObj;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(SetLoginDetails.this);
+            progressDialog.setMessage("Account being registered... Please wait...");
+            progressDialog.setIndeterminate(true);
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
         }
 
         @Override
@@ -102,7 +117,7 @@ public class SetLoginDetails extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-            Log.i("poop", result);
+
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
@@ -112,10 +127,18 @@ public class SetLoginDetails extends AppCompatActivity {
                         SetLoginDetails.this.finish();
                         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                         startActivity(intent);
+                    } else {
+                        if (json.has("msg")) {
+                            CYM_UTILITY.mAlertDialog(json.getString("msg"), SetLoginDetails.this);
+                        } else {
+                            CYM_UTILITY.mAlertDialog("Failed to create an account, try again.", SetLoginDetails.this);
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            } else {
+                CYM_UTILITY.mAlertDialog("Failed to create an account, try again.", SetLoginDetails.this);
             }
         }
     }

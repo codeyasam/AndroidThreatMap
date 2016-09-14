@@ -247,10 +247,18 @@ public class SetLocation extends AppCompatActivity implements OnMapReadyCallback
                     JSONObject firstIndexResult = json.getJSONArray("results").getJSONObject(0);
                     RegisterActivity.clientObj.setAddress(firstIndexResult.getString("formatted_address"));
                     //Log.i("poop", RegisterActivity.clientObj.getAddress());
+                    if (RegisterActivity.clientObj.getAddress().isEmpty()) {
+                        CYM_UTILITY.mAlertDialog("Failed to fetch address (may be due to slow internet connection). Try again.", SetLocation.this);
+                        return;
+                    }
                     Intent intent = new Intent(getApplicationContext(), SetLoginDetails.class);
                     startActivity(intent);
+                    progressDialog.dismiss();
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    CYM_UTILITY.mAlertDialog("Failed to fetch address (may be due to slow internet connection). Try again.", SetLocation.this);
+                } catch(Exception e) {
+                    CYM_UTILITY.mAlertDialog("Failed to fetch address (may be due to slow internet connection). Try again.", SetLocation.this);
                 }
 
 
