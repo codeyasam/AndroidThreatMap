@@ -84,7 +84,13 @@ public class LoginActivity extends AppCompatActivity {
                 try {
                     JSONObject json = new JSONObject(result);
                     if (json.getString("login").equals("true")) {
-                        Intent intent = new Intent(LoginActivity.this.getApplicationContext(), MainActivity.class);
+                        Intent intent = new Intent();
+                        if (json.getString("access_level").equals("CLIENT")) {
+                            intent = new Intent(LoginActivity.this.getApplicationContext(), MainActivity.class);
+                        } else {
+                            intent = new Intent(getApplicationContext(), MainAdminActivity.class);
+                        }
+
                         Session_TM.logUser(LoginActivity.this, json.getString("id"));
                         startActivity(intent);
                     } else {

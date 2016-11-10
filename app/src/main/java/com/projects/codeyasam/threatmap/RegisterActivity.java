@@ -59,7 +59,7 @@ public class RegisterActivity extends AppCompatActivity {
                 clientObj.getPersonNotif().isEmpty() ||
                 clientObj.getRelation().isEmpty()) {
             CYM_UTILITY.mAlertDialog("Fill up all required fields", RegisterActivity.this);
-            //return;
+            return;
         }
 
         Intent intent = new Intent(getApplicationContext(), SetLocation.class);

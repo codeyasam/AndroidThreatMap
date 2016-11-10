@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.projects.codeyasam.threatmap.MainActivity">
+    tools:context="com.projects.codeyasam.threatmap.MainAdminActivity">
 
     <fragment
         android:id="@+id/map"
@@ -12,15 +12,5 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="8"/>
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/colorPrimaryDark"
-        android:textColor="@color/colorPrimary"
-        android:text="REPORT EMERGENCY"
-        android:id="@+id/emerBtn"
-        android:onClick="reportEmer"
-        android:layout_margin="10dp"
-        android:layout_gravity="bottom" />
+    
 </LinearLayout>
