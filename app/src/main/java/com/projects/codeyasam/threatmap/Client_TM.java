@@ -5,6 +5,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.widget.ImageView;
 
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
 
 /**
@@ -159,4 +161,27 @@ public class Client_TM {
         bm.compress(Bitmap.CompressFormat.PNG, 100, stream);
         ivImage.setImageBitmap(CYM_UTILITY.getRoundedCornerBitmap(bm));
     }
+
+    public static Client_TM instantiateJSON(JSONObject json) {
+        try {
+            Client_TM clientTm = new Client_TM();
+            clientTm.id = json.getString("id");
+            clientTm.firstName = json.getString("first_name");
+            clientTm.middleName = json.getString("middle_name");
+            clientTm.lastName = json.getString("last_name");
+            clientTm.address = json.getString("address");
+            clientTm.lat = json.getString("lat");
+            clientTm.lng = json.getString("lng");
+            clientTm.address = json.getString("address");
+            clientTm.contactNo = json.getString("contact_no");
+            clientTm.setDisplayPicturePath(CYM_UTILITY.THREAT_MAP_ROOT_URL + json.getString("display_picture"));
+            clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(clientTm.getDisplayPicturePath()));
+            return clientTm;
+        } catch (Exception e) {
+
+        }
+
+        return null;
+    }
+
 }

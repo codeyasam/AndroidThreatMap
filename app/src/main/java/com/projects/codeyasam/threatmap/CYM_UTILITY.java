@@ -35,7 +35,7 @@ import java.net.URL;
 public class CYM_UTILITY {
 
     //public static final String THREAT_MAP_ROOT_URL = "http://codeyasam.com/threatmap/";
-    public static final String THREAT_MAP_ROOT_URL = "http://192.168.42.43/threatmap/";
+    public static final String THREAT_MAP_ROOT_URL = "http://192.168.42.130/threatmap/";
 
     public static Bitmap getRoundedCornerBitmap(Bitmap bitmap) {
         Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
@@ -212,6 +212,17 @@ public class CYM_UTILITY {
         return inSampleSize;
     }
 
+    public static Bitmap getBitmapFromUrl(String url) {
+        try {
+            URL pictureURL = new URL(url);
+            Bitmap bitmap = BitmapFactory.decodeStream(pictureURL.openConnection().getInputStream());
+            return bitmap;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public static Bitmap getResizedBitmap(Bitmap bm, int newWidth, int newHeight) {
         int width = bm.getWidth();
         int height = bm.getHeight();
@@ -225,7 +236,7 @@ public class CYM_UTILITY {
         // "RECREATE" THE NEW BITMAP
         Bitmap resizedBitmap = Bitmap.createBitmap(
                 bm, 0, 0, width, height, matrix, false);
-        bm.recycle();
+        //bm.recycle();
         return resizedBitmap;
     }
 
