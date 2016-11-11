@@ -85,11 +85,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         }, 0, 10000);
-
-//        if (mLastLocation != null) {
-//            new OnlineClientsLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-//        }
-
     }
 
     @Override
@@ -107,6 +102,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             editor.commit();
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             startActivity(intent);
+        } else if (item.getItemId() == R.id.threatMenu) {
+            Intent intent = new Intent(getApplicationContext(), ThreatActivity.class);
+            startActivity(intent);
+        } else if (item.getItemId() == R.id.officeMenu) {
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -339,7 +339,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mLastLocation != null) {
             mLat = mLastLocation.getLatitude();
             mLng = mLastLocation.getLongitude();
-            LatLng latLng = new LatLng(mLat, mLng);
         }
         return false;
     }

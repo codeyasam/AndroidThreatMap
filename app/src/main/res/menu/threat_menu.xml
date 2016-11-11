@@ -1,24 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item
-        android:id="@+id/logout"
-        android:icon="@drawable/logout"
-        android:title="Logout"
-        android:orderInCategory="103"
-        app:showAsAction="never"/>
 
     <item
-        android:id="@+id/threatMenu"
-        android:title="Threats"
+        android:id="@+id/countryMenu"
+        android:title="Country"
+        android:orderInCategory="99"
+        app:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/provinceMenu"
+        android:title="Province"
         android:orderInCategory="100"
         app:showAsAction="always"
         />
 
     <item
-        android:id="@+id/officeMenu"
-        android:title="Offices"
+        android:id="@+id/cityMenu"
+        android:title="City"
         android:orderInCategory="101"
         app:showAsAction="always"
         />
+
+
+
 </menu>

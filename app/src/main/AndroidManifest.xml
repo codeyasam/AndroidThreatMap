@@ -34,7 +34,7 @@
         <activity
             android:name=".RegisterActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait"></activity>
+            android:screenOrientation="portrait" />
         <activity
             android:name=".SetLocation"
             android:configChanges="orientation|keyboardHidden"
@@ -69,8 +69,9 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait"></activity>
-        <activity android:name=".MainAdminActivity"></activity>
+            android:screenOrientation="portrait" />
+        <activity android:name=".MainAdminActivity" />
+        <activity android:name=".ThreatActivity"></activity>
     </application>
 
 </manifest>
