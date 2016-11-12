@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.projects.codeyasam.threatmap.MainActivity">
+    tools:context="com.projects.codeyasam.threatmap.OfficeActivity">
 
     <fragment
         android:id="@+id/map"
@@ -18,9 +18,10 @@
         android:layout_height="wrap_content"
         android:background="@color/colorPrimaryDark"
         android:textColor="@color/colorPrimary"
-        android:text="ASK FOR HELP (tap 7 times)"
+        android:text="ASK FOR HELP (TAP 7 TIMES)"
         android:id="@+id/emerBtn"
         android:onClick="reportEmer"
         android:layout_margin="10dp"
         android:layout_gravity="bottom" />
+
 </LinearLayout>

@@ -71,7 +71,8 @@
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="portrait" />
         <activity android:name=".MainAdminActivity" />
-        <activity android:name=".ThreatActivity"></activity>
+        <activity android:name=".ThreatActivity" />
+        <activity android:name=".OfficeActivity"></activity>
     </application>
 
 </manifest>

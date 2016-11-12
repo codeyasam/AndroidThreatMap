@@ -2,22 +2,28 @@ package com.projects.codeyasam.threatmap;
 
 import android.*;
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -40,6 +46,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -48,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public static final String USERS_LOADER_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/loadOnlineClients.php?onlineClients=true";
     public static final String SESSION_USER_UPDATER = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/SessionUserUpdater.php";
+    public static final String REPORT_EMERGENCY_ALL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/askForHelp.php";
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
@@ -58,6 +66,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public static List<Client_TM> onlineClientList;
     public HashMap<String, Client_TM> hmOnlineClients;
+    private Button btnEmer;
+
+    private Notif_TM notifObj;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +81,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         buildGoogleApiClient();
         onlineClientList = new ArrayList<>();
         hmOnlineClients = new HashMap<>();
+        btnEmer = (Button) findViewById(R.id.emerBtn);
+        btnEmer.setEnabled(false);
+        Timer btnTimer = new Timer();
+        btnTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        long time = System.currentTimeMillis();
+                        if (startMillis == 0 || time-startMillis > 3000) {
+                            String prompt = "ASK FOR HELP (Tap 7 times)";
+                            btnEmer.setText(prompt);
+                            count = 0;
+                        }
+                    }
+                });
+
+            }
+        }, 0, 1000);
+
+        notifObj = new Notif_TM();
     }
 
     @Override
@@ -106,7 +139,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Intent intent = new Intent(getApplicationContext(), ThreatActivity.class);
             startActivity(intent);
         } else if (item.getItemId() == R.id.officeMenu) {
-
+            Intent intent = new Intent(getApplicationContext(), OfficeActivity.class);
+            startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -238,19 +272,78 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public class EmergencyReporter extends AsyncTask<String, String, String> {
 
+        private Notif_TM notifObj;
+        private ProgressDialog progressDialog;
+
+        public EmergencyReporter(Notif_TM notifObj) {
+            this.notifObj = notifObj;
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.setMessage("Sending Request...");
+            progressDialog.show();
+        }
+
         @Override
-        protected String doInBackground(String... params) {
+        protected String doInBackground(String... args) {
+            try {
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("allNearest", "true"));
+                params.add(new BasicNameValuePair("client_id", notifObj.getClient_id()));
+                params.add(new BasicNameValuePair("lat", notifObj.getLat()));
+                params.add(new BasicNameValuePair("lng", notifObj.getLng()));
+                params.add(new BasicNameValuePair("address", notifObj.getAddress()));
+                params.add(new BasicNameValuePair("municipality", notifObj.getMunicipality()));
+                params.add(new BasicNameValuePair("province", notifObj.getProvince()));
+                params.add(new BasicNameValuePair("country", notifObj.getCountry()));
+
+                JSONObject json = JSONParser.makeHttpRequest(REPORT_EMERGENCY_ALL, "POST", params);
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             return null;
         }
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
+            CYM_UTILITY.mAlertDialog("Request Sent!", MainActivity.this);
         }
 
     }
 
+    private int count = 0;
+    private long startMillis = 0;
     public void reportEmer(View v) {
+        long time = System.currentTimeMillis();
+        startMillis = time;
+        count++;
+        if (count >= 7) {
+            count = 0;
+            try {
+                LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+                List<Address> addressList = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
+                if (addressList.size() > 0) {
+                    notifObj.setAddress(addressList.get(0).getAddressLine(0) + ", " + addressList.get(0).getLocality() + ", " + addressList.get(0).getSubAdminArea() + ", " + addressList.get(0).getCountryName());
+                    notifObj.setClient_id(settings.getString(Session_TM.LOGGED_USER_ID, ""));
+                    notifObj.setMunicipality(addressList.get(0).getLocality());
+                    notifObj.setProvince(addressList.get(0).getSubAdminArea());
+                    notifObj.setCountry(addressList.get(0).getCountryName());
+                    notifObj.setLat(String.valueOf(ll.latitude));
+                    notifObj.setLng(String.valueOf(ll.longitude));
+                }
 
+                new EmergencyReporter(notifObj).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        int numReq = 7 - count;
+        String prompt = "ASK FOR HELP (tap " + numReq + " times)";
+        btnEmer.setText(prompt);
     }
 
     @Override
@@ -271,6 +364,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
             CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 10);
             mMap.moveCamera(update);
+            btnEmer.setEnabled(true);
             new OnlineClientsLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }

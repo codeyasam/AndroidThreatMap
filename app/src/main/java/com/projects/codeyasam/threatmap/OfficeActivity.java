@@ -1,7 +1,7 @@
 package com.projects.codeyasam.threatmap;
 
-import android.*;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -39,8 +39,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,10 +46,10 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallback,
-        GoogleMap.OnMapClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMyLocationButtonClickListener {
+public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallback,
+        GoogleMap.OnMapClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMarkerClickListener {
 
-    public static final String THREATS_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/getThreats.php?allThreats=true";
+    public static final String OFFICE_LOADER_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/getOffices.php?allOffices=true";
     public static final String REPORT_EMERGENCY_ALL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/askForHelp.php";
 
     private GoogleMap mMap;
@@ -61,10 +59,10 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
     private double mLng;
     private SharedPreferences settings;
 
-    private HashMap<String, Threat_TM> hmThreat;
-    private HashMap<String, Integer> hmMunicipality;
-    private HashMap<String, Integer> hmProvince;
-    private HashMap<String, Integer> hmCountry;
+    private HashMap<String, Office_TM> hmOffices;
+    private String currentCountry;
+    private String currentMunicipality;
+    private String currentProvince;
     private HashMap<String, Marker> markers;
 
     private Button btnEmer;
@@ -75,17 +73,14 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_threat);
-        settings = PreferenceManager.getDefaultSharedPreferences(ThreatActivity.this);
+        setContentView(R.layout.activity_office);
+        settings = PreferenceManager.getDefaultSharedPreferences(OfficeActivity.this);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         buildGoogleApiClient();
 
-        hmThreat = new HashMap<>();
-        hmMunicipality = new HashMap<>();
-        hmProvince = new HashMap<>();
-        hmCountry = new HashMap<>();
+        hmOffices = new HashMap<>();
         markers = new HashMap<>();
 
         btnEmer = (Button) findViewById(R.id.emerBtn);
@@ -121,43 +116,37 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.provinceMenu) {
-            String highestProvince = getHighestCount(hmProvince);
-            //Log.i("poop", "Highest Prov: " + highestProvince);
-            for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
-                Threat_TM threatObj = hmThreat.get(entry.getKey());
+        if (item.getItemId() == R.id.countryMenu) {
+            for (Map.Entry<String, Office_TM> entry : hmOffices.entrySet()) {
+                Office_TM officeObj = entry.getValue();
                 Marker marker = markers.get(entry.getKey());
-                if (!threatObj.getProvince().equals(highestProvince)) {
+                if (!currentCountry.equals(officeObj.getCountry())) {
                     marker.setVisible(false);
                 } else {
                     marker.setVisible(true);
                 }
-
             }
-        } else if (item.getItemId() == R.id.cityMenu) {
-            String highestMuncipality = getHighestCount(hmMunicipality);
-            for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
-                Threat_TM threaObj = hmThreat.get(entry.getKey());
+        } else if (item.getItemId() == R.id.provinceMenu) {
+            for (Map.Entry<String, Office_TM> entry : hmOffices.entrySet()) {
+                Office_TM officeObj = entry.getValue();
                 Marker marker = markers.get(entry.getKey());
-                if (!threaObj.getMunicipality().equals(highestMuncipality)) {
+                if (!currentProvince.equals(officeObj.getProvince())) {
                     marker.setVisible(false);
                 } else {
                     marker.setVisible(true);
                 }
             }
-        } else if (item.getItemId() == R.id.countryMenu) {
-            String highestCountry = getHighestCount(hmCountry);
-            for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
-                Threat_TM threaObj = hmThreat.get(entry.getKey());
+        } else if (item.getItemId() == R.id.cityMenu) {
+            for (Map.Entry<String, Office_TM> entry : hmOffices.entrySet()) {
+                Office_TM officeObj = entry.getValue();
                 Marker marker = markers.get(entry.getKey());
-                if (!threaObj.getCountry().equals(highestCountry)) {
+                if (!currentMunicipality.equals(officeObj.getMunicipality())) {
                     marker.setVisible(false);
                 } else {
                     marker.setVisible(true);
                 }
             }
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -176,30 +165,33 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         count++;
         if (count >= 7) {
             count = 0;
-            try {
-                LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-                List<Address> addressList = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
-                if (addressList.size() > 0) {
-                    notifObj.setAddress(addressList.get(0).getAddressLine(0) + ", " + addressList.get(0).getLocality() + ", " + addressList.get(0).getSubAdminArea() + ", " + addressList.get(0).getCountryName());
-                    notifObj.setClient_id(settings.getString(Session_TM.LOGGED_USER_ID, ""));
-                    notifObj.setMunicipality(addressList.get(0).getLocality());
-                    notifObj.setProvince(addressList.get(0).getSubAdminArea());
-                    notifObj.setCountry(addressList.get(0).getCountryName());
-                    notifObj.setLat(String.valueOf(ll.latitude));
-                    notifObj.setLng(String.valueOf(ll.longitude));
-                }
-
-                new EmergencyReporter(notifObj).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+            setupNotifObj();
+            new EmergencyReporter(notifObj, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
 
         int numReq = 7 - count;
         String prompt = "ASK FOR HELP (tap " + numReq + " times)";
         btnEmer.setText(prompt);
+    }
+
+    private void setupNotifObj() {
+        try {
+            LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+            List<Address> addressList = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
+            if (addressList.size() > 0) {
+                notifObj.setAddress(addressList.get(0).getAddressLine(0) + ", " + addressList.get(0).getLocality() + ", " + addressList.get(0).getSubAdminArea() + ", " + addressList.get(0).getCountryName());
+                notifObj.setClient_id(settings.getString(Session_TM.LOGGED_USER_ID, ""));
+                notifObj.setMunicipality(addressList.get(0).getLocality());
+                notifObj.setProvince(addressList.get(0).getSubAdminArea());
+                notifObj.setCountry(addressList.get(0).getCountryName());
+                notifObj.setLat(String.valueOf(ll.latitude));
+                notifObj.setLng(String.valueOf(ll.longitude));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -220,7 +212,7 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
             CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 10);
             mMap.moveCamera(update);
             btnEmer.setEnabled(true);
-            new ThreatLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            new OfficeLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -256,21 +248,7 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         mMap = googleMap;
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.setOnMyLocationButtonClickListener(this);
-        mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
-
-            @Override
-            public View getInfoWindow(Marker marker) {
-                return null;
-            }
-
-            @Override
-            public View getInfoContents(Marker marker) {
-                Threat_TM selectedThreat = hmThreat.get(marker.getTitle());
-                View v = getLayoutInflater().inflate(R.layout.threat_info_window, null);
-                CYM_UTILITY.displayText(v, R.id.threatDescription, selectedThreat.getDescription().isEmpty() ? "Threat Description: unknown" : selectedThreat.getDescription());
-                return v;
-            }
-        });
+        mMap.setOnMarkerClickListener(this);
     }
 
     @Override
@@ -283,12 +261,32 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         return false;
     }
 
-    class ThreatLoader extends AsyncTask<String, String, String> {
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
+        Office_TM officeObj = hmOffices.get(marker.getTitle());
+        CYM_UTILITY.callYesNoMessage(officeObj.getName() + "\n Ask help from this office?", OfficeActivity.this, sendRequestSpecific(officeObj));
+        return true;
+    }
+
+    private DialogInterface.OnClickListener sendRequestSpecific(final Office_TM officeObj) {
+        return new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                setupNotifObj();
+                notifObj.setOffice_id(officeObj.getId());
+                dialog.dismiss();
+                new EmergencyReporter(notifObj, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }
+        };
+    }
+
+    class OfficeLoader extends AsyncTask<String, String, String> {
 
         @Override
-        protected String doInBackground(String... args) {
+        protected String doInBackground(String... params) {
             try {
-                JSONObject json = JSONParser.getJSONfromURL(THREATS_URL);
+                JSONObject json = JSONParser.getJSONfromURL(OFFICE_LOADER_URL);
                 return json.toString();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -302,12 +300,11 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
-                    JSONArray jsonArray = json.getJSONArray("allThreats");
+                    JSONArray jsonArray = json.getJSONArray("allOffices");
                     for (int i = 0; i < jsonArray.length(); i++) {
-                        EachThreatLoader task = new EachThreatLoader(jsonArray.getJSONObject(i));
+                        EachOfficeLoader task = new EachOfficeLoader(jsonArray.getJSONObject(i));
                         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                     }
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -315,41 +312,20 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         }
     }
 
-    class EachThreatLoader extends AsyncTask<String, String, String> {
+    class EachOfficeLoader extends AsyncTask<String, String, String> {
 
-        private JSONObject threatJSON;
-        private Threat_TM threatObj;
+        private JSONObject officeJSON;
+        private Office_TM officeObj;
 
-        public EachThreatLoader(JSONObject threatJSON) {
-            this.threatJSON = threatJSON;
+        public EachOfficeLoader(JSONObject officeJSON) {
+            this.officeJSON = officeJSON;
         }
 
         @Override
         protected String doInBackground(String... params) {
             try {
-                threatObj = Threat_TM.instantiateJSON(threatJSON);
-                hmThreat.put(threatObj.getId(), threatObj);
-                if (hmProvince.containsKey(threatObj.getProvince())) {
-                    int count = hmProvince.get(threatObj.getProvince()) + 1;
-                    hmProvince.put(threatObj.getProvince(), count);
-                } else  {
-                    hmProvince.put(threatObj.getProvince(), 1);
-                }
-
-                Log.i("poop", threatObj.getMunicipality());
-                if (hmMunicipality.containsKey(threatObj.getMunicipality())) {
-                    int count = hmMunicipality.get(threatObj.getMunicipality()) + 1;
-                    hmMunicipality.put(threatObj.getMunicipality(), count);
-                } else {
-                    hmMunicipality.put(threatObj.getMunicipality(), 1);
-                }
-
-                if (hmCountry.containsKey(threatObj.getMunicipality())) {
-                    int count = hmCountry.get(threatObj.getCountry()) + 1;
-                    hmCountry.put(threatObj.getCountry(), count);
-                } else {
-                    hmCountry.put(threatObj.getCountry(), 1);
-                }
+                officeObj = Office_TM.instantiateJSON(officeJSON);
+                hmOffices.put(officeObj.getId(), officeObj);
                 return "true";
             } catch (Exception e) {
                 e.printStackTrace();
@@ -360,19 +336,17 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-//            Log.i("poop", hmProvince.toString());
-//            Log.i("poop", hmMunicipality.toString());
-            try {
-                LatLng latLng = new LatLng(Double.parseDouble(threatObj.getLat()), Double.parseDouble(threatObj.getLng()));
-                MarkerOptions options = new MarkerOptions()
-                        .title(threatObj.getId())
-                        .position(latLng)
-                        .snippet(threatObj.getDescription());
+            if (result != null) {
+                try {
+                    LatLng latLng = new LatLng(Double.parseDouble(officeObj.getLat()), Double.parseDouble(officeObj.getLng()));
+                    MarkerOptions options = new MarkerOptions()
+                            .position(latLng)
+                            .title(officeObj.getId());
 
-                Marker marker = mMap.addMarker(options);
-                markers.put(threatObj.getId(), marker);
-            } catch (Exception e) {
-                e.printStackTrace();
+                    markers.put(officeObj.getId(), mMap.addMarker(options));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -381,10 +355,12 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
 
         private Notif_TM notifObj;
         private ProgressDialog progressDialog;
+        private boolean specificOffice;
 
-        public EmergencyReporter(Notif_TM notifObj) {
+        public EmergencyReporter(Notif_TM notifObj, boolean specificOffice) {
             this.notifObj = notifObj;
-            progressDialog = new ProgressDialog(ThreatActivity.this);
+            this.specificOffice = specificOffice;
+            progressDialog = new ProgressDialog(OfficeActivity.this);
             progressDialog.setCanceledOnTouchOutside(false);
             progressDialog.setMessage("Sending Request...");
             progressDialog.show();
@@ -394,7 +370,13 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         protected String doInBackground(String... args) {
             try {
                 List<NameValuePair> params = new ArrayList<>();
-                params.add(new BasicNameValuePair("allNearest", "true"));
+                if (!specificOffice)  {
+                    params.add(new BasicNameValuePair("allNearest", "true"));
+                } else {
+                    params.add(new BasicNameValuePair("specificOffice", "true"));
+                    params.add(new BasicNameValuePair("office_id", notifObj.getOffice_id()));
+                }
+                Log.i("poop", "specificOffice: " + specificOffice);
                 params.add(new BasicNameValuePair("client_id", notifObj.getClient_id()));
                 params.add(new BasicNameValuePair("lat", notifObj.getLat()));
                 params.add(new BasicNameValuePair("lng", notifObj.getLng()));
@@ -414,18 +396,8 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             progressDialog.dismiss();
-            CYM_UTILITY.mAlertDialog("Request Sent!", ThreatActivity.this);
+            CYM_UTILITY.mAlertDialog("Request Sent!", OfficeActivity.this);
         }
 
-    }
-
-    public String getHighestCount(HashMap<String, Integer> hm) {
-        int maxValue = Collections.max(hm.values());
-        for (Map.Entry<String, Integer> entry : hm.entrySet()) {
-            if (entry.getValue() == maxValue) {
-                return entry.getKey();
-            }
-        }
-        return null;
     }
 }
