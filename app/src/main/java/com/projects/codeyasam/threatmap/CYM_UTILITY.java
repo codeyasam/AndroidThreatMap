@@ -25,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -35,7 +36,7 @@ import java.net.URL;
 public class CYM_UTILITY {
 
     //public static final String THREAT_MAP_ROOT_URL = "http://codeyasam.com/threatmap/";
-    public static final String THREAT_MAP_ROOT_URL = "http://192.168.42.68/threatmap/";
+    public static final String THREAT_MAP_ROOT_URL = "http://192.168.42.113/threatmap/";
 
     public static Bitmap getRoundedCornerBitmap(Bitmap bitmap) {
         Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
@@ -179,6 +180,13 @@ public class CYM_UTILITY {
         builder.show();
     }
 
+    public static void okActionDialog(String message, Activity context, DialogInterface.OnClickListener clickListener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(message);
+        builder.setPositiveButton("OK", clickListener);
+        builder.show();
+    }
+
     public static void setRatingBarRate(Activity activity, int id, float rating) {
         RatingBar ratingBar = (RatingBar) activity.findViewById(id);
         ratingBar.setRating(rating);
@@ -238,6 +246,14 @@ public class CYM_UTILITY {
                 bm, 0, 0, width, height, matrix, false);
         //bm.recycle();
         return resizedBitmap;
+    }
+
+    public static void setDefaultImage(Activity activity, int id, int drawable) {
+        ImageView ivImage = (ImageView) activity.findViewById(id);
+        Bitmap bm = BitmapFactory.decodeResource(activity.getResources(), drawable);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        ivImage.setImageBitmap(getRoundedCornerBitmap(bm));
     }
 
 }

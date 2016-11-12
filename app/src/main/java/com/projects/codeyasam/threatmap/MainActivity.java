@@ -133,8 +133,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             SharedPreferences.Editor editor = settings.edit();
             editor.putString(Session_TM.LOGGED_USER_ID, "");
             editor.commit();
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            startActivity(intent);
+            finish();
+//            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+//            startActivity(intent);
         } else if (item.getItemId() == R.id.threatMenu) {
             Intent intent = new Intent(getApplicationContext(), ThreatActivity.class);
             startActivity(intent);

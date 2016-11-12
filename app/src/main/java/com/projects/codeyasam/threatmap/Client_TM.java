@@ -14,6 +14,8 @@ import java.io.ByteArrayOutputStream;
  */
 public class Client_TM {
 
+    public static Client_TM clientTm;
+
     private String id;
     private String firstName;
     private String middleName;
@@ -29,6 +31,13 @@ public class Client_TM {
     private String personNotif;
     private String relation;
     private String identificationNo;
+    private String email;
+
+    public String requestId;
+
+    public String getEmail() { return email; }
+
+    public void setEmail(String email) { this.email = email; }
 
     public String getId() {
         return id;
@@ -174,11 +183,14 @@ public class Client_TM {
             clientTm.lng = json.getString("lng");
             clientTm.address = json.getString("address");
             clientTm.contactNo = json.getString("contact_no");
+            clientTm.identificationNo = json.getString("identification_number");
+            clientTm.email = json.getString("email");
+            clientTm.personNotif = json.getString("person_to_notify");
             clientTm.setDisplayPicturePath(CYM_UTILITY.THREAT_MAP_ROOT_URL + json.getString("display_picture"));
             clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(clientTm.getDisplayPicturePath()));
             return clientTm;
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
 
         return null;

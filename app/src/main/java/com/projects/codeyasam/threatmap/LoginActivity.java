@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import org.apache.http.NameValuePair;
@@ -33,8 +34,15 @@ public class LoginActivity extends AppCompatActivity {
         settings = PreferenceManager.getDefaultSharedPreferences(LoginActivity.this);
         String clientId = settings.getString(Session_TM.LOGGED_USER_ID, "");
         if (!clientId.isEmpty()) {
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(intent);
+            String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+            if (userType.equals("CLIENT")) {
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+            } else if (userType.equals("USER") || userType.equals("HEAD")) {
+                Intent intent = new Intent(getApplicationContext(), MainAdminActivity.class);
+                startActivity(intent);
+            }
+
         }
     }
 
@@ -82,6 +90,7 @@ public class LoginActivity extends AppCompatActivity {
             super.onPostExecute(result);
             if (result != null) {
                 try {
+                    Log.i("poop", result.toString());
                     JSONObject json = new JSONObject(result);
                     if (json.getString("login").equals("true")) {
                         Intent intent = new Intent();
@@ -91,7 +100,7 @@ public class LoginActivity extends AppCompatActivity {
                             intent = new Intent(getApplicationContext(), MainAdminActivity.class);
                         }
 
-                        Session_TM.logUser(LoginActivity.this, json.getString("id"));
+                        Session_TM.logUser(LoginActivity.this, json.getString("id"), json.getString("user_type"));
                         startActivity(intent);
                     } else {
                         CYM_UTILITY.mAlertDialog("wrong username/password", LoginActivity.this);
