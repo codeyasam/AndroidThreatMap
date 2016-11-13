@@ -76,7 +76,9 @@
         <activity android:name=".ThreatActivity" />
         <activity android:name=".OfficeActivity" />
         <activity android:name=".ViewProfile" />
-        <activity android:name=".EditProfile"></activity>
+        <activity android:name=".EditProfile" />
+        <activity android:name=".ChangePassword"
+            android:label="Change Password"></activity>
     </application>
 
 </manifest>

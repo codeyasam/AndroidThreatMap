@@ -21,13 +21,6 @@
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/identificationTxt"
-            android:hint="Identification Number"
-            android:layout_gravity="center_horizontal" />
-
-        <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:id="@+id/firstNameTxt"
             android:hint="First Name"
             android:layout_gravity="center_horizontal" />
@@ -51,20 +44,6 @@
             android:layout_height="wrap_content"
             android:id="@+id/contactNoTxt"
             android:hint="Contact No"
-            android:layout_gravity="center_horizontal" />
-
-        <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/personNotifyTxt"
-            android:hint="Person to Notify"
-            android:layout_gravity="center_horizontal" />
-
-        <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/relationTxt"
-            android:hint="Relation with Person to Notify"
             android:layout_gravity="center_horizontal" />
 
         <Button

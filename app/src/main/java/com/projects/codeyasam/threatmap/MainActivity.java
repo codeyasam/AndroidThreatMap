@@ -3,6 +3,7 @@ package com.projects.codeyasam.threatmap;
 import android.*;
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -51,11 +52,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        GoogleMap.OnMapClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMyLocationButtonClickListener {
+        GoogleMap.OnMapClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnInfoWindowClickListener {
 
     public static final String USERS_LOADER_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/loadOnlineClients.php?onlineClients=true";
     public static final String SESSION_USER_UPDATER = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/SessionUserUpdater.php";
     public static final String REPORT_EMERGENCY_ALL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/askForHelp.php";
+    public static final String DELETE_ACCOUNT_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/deleteAccount.php";
+    public static final String LOGOUT_ACCOUNT_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/androidLogout.php";
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
@@ -108,6 +111,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
+        progressDialog = new ProgressDialog(MainActivity.this);
+        progressDialog.setCanceledOnTouchOutside(true);
+        progressDialog.setMessage("Loading Online Users...");
+        progressDialog.show();
         Timer myTimer = new Timer();
         myTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -130,20 +137,37 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.logout) {
-            SharedPreferences.Editor editor = settings.edit();
-            editor.putString(Session_TM.LOGGED_USER_ID, "");
-            editor.commit();
-            finish();
-//            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-//            startActivity(intent);
+            new UserLogout().execute();
+
+//            SharedPreferences.Editor editor = settings.edit();
+//            editor.putString(Session_TM.LOGGED_USER_ID, "");
+//            editor.commit();
+//            finish();
         } else if (item.getItemId() == R.id.threatMenu) {
             Intent intent = new Intent(getApplicationContext(), ThreatActivity.class);
             startActivity(intent);
         } else if (item.getItemId() == R.id.officeMenu) {
             Intent intent = new Intent(getApplicationContext(), OfficeActivity.class);
             startActivity(intent);
+        } else if (item.getItemId() == R.id.editProfile) {
+            Intent intent = new Intent(MainActivity.this, EditProfile.class);
+            startActivity(intent);
+        } else if (item.getItemId() == R.id.deleteAccoutn) {
+            CYM_UTILITY.callYesNoMessage("Are you sure you want to delete your account?", MainActivity.this, deleteAccount());
+        } else if (item.getItemId() == R.id.changePassword) {
+            Intent intent = new Intent(MainActivity.this, ChangePassword.class);
+            startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public DialogInterface.OnClickListener deleteAccount() {
+        return new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                new AccountPurger().execute();
+            }
+        };
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -153,6 +177,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .addApi(LocationServices.API)
                 .build();
         mGoogleApiClient.connect();
+    }
+    public boolean runOnce = false;
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Client_TM.clientTm = hmOnlineClients.get(marker.getTitle());
+        Intent intent = new Intent(MainActivity.this, ViewProfile.class);
+        startActivity(intent);
+        mMap.clear();
     }
 
     class SessionUserUpdater extends AsyncTask<String, String, String> {
@@ -182,12 +215,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (result != null) {
                 try {
                     //Log.i("poop", "asdf");
+                    if (!runOnce) {
+                        new OnlineClientsLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                        runOnce = true;
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
     }
+
+    private ProgressDialog progressDialog;
 
     class OnlineClientsLoader extends AsyncTask<String, String, String> {
 
@@ -211,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
@@ -366,7 +406,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 10);
             mMap.moveCamera(update);
             btnEmer.setEnabled(true);
-            new OnlineClientsLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            //new OnlineClientsLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -391,6 +431,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMapClickListener(this);
+        mMap.setOnInfoWindowClickListener(this);
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
 
             @Override
@@ -445,5 +486,83 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         homeIntent.addCategory( Intent.CATEGORY_HOME );
         homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(homeIntent);
+    }
+
+    class AccountPurger extends AsyncTask<String, String, String> {
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                String userId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+                String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+                Log.i("poop", "user type: " + userType + "user id: " + userId);
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("user_id", userId));
+                params.add(new BasicNameValuePair("user_type", userType));
+                params.add(new BasicNameValuePair("submit", "true"));
+                JSONObject json = JSONParser.makeHttpRequest(DELETE_ACCOUNT_URL, "POST", params);
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                try {
+                    Log.i("poop", result);
+                    JSONObject json = new JSONObject(result);
+                    if (json.getString("success").equals("true")) {
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString(Session_TM.LOGGED_USER_ID, "");
+                        editor.putString(Session_TM.LOGGED_USER_TYPE, "");
+                        editor.commit();
+                        finish();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class UserLogout extends AsyncTask<String, String, String> {
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                String userId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("user_id", userId));
+                params.add(new BasicNameValuePair("logout", "true"));
+                JSONObject json = JSONParser.makeHttpRequest(LOGOUT_ACCOUNT_URL, "POST", params);
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                try {
+                    Log.i("poop", result);
+                    JSONObject json = new JSONObject(result);
+                    if (json.getString("success").equals("true")) {
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString(Session_TM.LOGGED_USER_ID, "");
+                        editor.commit();
+                        finish();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

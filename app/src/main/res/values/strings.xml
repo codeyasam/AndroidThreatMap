@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Threatmap</string>
     <string name="title_activity_maps">Map</string>
+    <string name="full_detail"><a href="#">View Profile</a></string>
 </resources>

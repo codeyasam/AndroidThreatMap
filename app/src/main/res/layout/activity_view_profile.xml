@@ -78,7 +78,7 @@
         android:background="@color/colorPrimaryDark"
         android:textColor="@color/colorPrimary"
         android:text="RESPOND TO REQUEST"
-        android:id="@+id/emerBtn"
+        android:id="@+id/respondBtn"
         android:onClick="respondRequest"
         android:layout_margin="10dp"
         android:layout_gravity="bottom" />

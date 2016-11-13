@@ -196,4 +196,24 @@ public class Client_TM {
         return null;
     }
 
+    public static Client_TM instantiateJSONasUser(JSONObject json) {
+        try {
+            Client_TM clientTm = new Client_TM();
+            clientTm.id = json.getString("id");
+            clientTm.firstName = json.getString("first_name");
+            clientTm.middleName = json.getString("middle_name");
+            clientTm.lastName = json.getString("last_name");
+            clientTm.address = json.getString("address");
+            clientTm.address = json.getString("address");
+            clientTm.contactNo = json.getString("contact_no");
+            clientTm.email = json.getString("email");
+            clientTm.setDisplayPicturePath(CYM_UTILITY.THREAT_MAP_ROOT_URL + json.getString("display_picture"));
+            clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(clientTm.getDisplayPicturePath()));
+            return clientTm;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

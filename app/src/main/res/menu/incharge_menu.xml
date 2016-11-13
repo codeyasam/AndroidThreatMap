@@ -4,15 +4,26 @@
 
     <item
         android:id="@+id/editProfile"
-        android:icon="@drawable/logout"
         android:title="Edit Profile"
         android:orderInCategory="103"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/changePassword"
+        android:title="Change Password"
+        android:orderInCategory="104"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/deleteAccoutn"
+        android:title="Delete Account"
+        android:orderInCategory="105"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/logout"
         android:icon="@drawable/logout"
         android:title="Logout"
-        android:orderInCategory="103"
+        android:orderInCategory="106"
         app:showAsAction="never"/>
 </menu>

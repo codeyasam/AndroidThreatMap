@@ -1,6 +1,7 @@
 package com.projects.codeyasam.threatmap;
 
 import android.*;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -31,16 +32,21 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MainAdminActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleMap.OnMapClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMyLocationButtonClickListener {
 
     public static final String REQUEST_LOADER_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/getUserRequests.php?getNeeded=true";
+    public static final String DELETE_ACCOUNT_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/deleteAccount.php";
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
@@ -83,9 +89,24 @@ public class MainAdminActivity extends AppCompatActivity implements OnMapReadyCa
             editor.commit();
             finish();
         } else if (item.getItemId() == R.id.editProfile) {
-            
+            Intent intent = new Intent(MainAdminActivity.this, EditProfile.class);
+            startActivity(intent);
+        } else if (item.getItemId() == R.id.changePassword) {
+            Intent intent = new Intent(MainAdminActivity.this, ChangePassword.class);
+            startActivity(intent);
+        } else if (item.getItemId() == R.id.deleteAccoutn) {
+            CYM_UTILITY.callYesNoMessage("Are you sure you want to delete your account?", MainAdminActivity.this, deleteAccount());
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public DialogInterface.OnClickListener deleteAccount() {
+        return new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                new AccountPurger().execute();
+            }
+        };
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -249,6 +270,46 @@ public class MainAdminActivity extends AppCompatActivity implements OnMapReadyCa
                     Bitmap bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.mnofitlogg);
                     options.icon(BitmapDescriptorFactory.fromBitmap(CYM_UTILITY.getResizedBitmap(bitmap, 50, 50)));
                     mMap.addMarker(options);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class AccountPurger extends AsyncTask<String, String, String> {
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                String userId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+                String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+                List<NameValuePair> params = new ArrayList<>();
+                params.add(new BasicNameValuePair("user_id", userId));
+                params.add(new BasicNameValuePair("user_type", userType));
+                params.add(new BasicNameValuePair("submit", "true"));
+                JSONObject json = JSONParser.makeHttpRequest(DELETE_ACCOUNT_URL, "POST", params);
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                try {
+                    JSONObject json = new JSONObject(result);
+                    if (json.getString("success").equals("true")) {
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString(Session_TM.LOGGED_USER_ID, "");
+                        editor.putString(Session_TM.LOGGED_USER_TYPE, "");
+                        editor.commit();
+
+                        finish();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

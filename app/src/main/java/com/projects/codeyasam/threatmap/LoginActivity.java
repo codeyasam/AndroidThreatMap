@@ -100,7 +100,11 @@ public class LoginActivity extends AppCompatActivity {
                             intent = new Intent(getApplicationContext(), MainAdminActivity.class);
                         }
 
-                        Session_TM.logUser(LoginActivity.this, json.getString("id"), json.getString("user_type"));
+                        if (json.has("user_type")) {
+                            Session_TM.logUser(LoginActivity.this, json.getString("id"), json.getString("user_type"));
+                        } else {
+                            Session_TM.logUser(LoginActivity.this, json.getString("id"));
+                        }
                         startActivity(intent);
                     } else {
                         CYM_UTILITY.mAlertDialog("wrong username/password", LoginActivity.this);

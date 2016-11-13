@@ -1,6 +1,7 @@
 package com.projects.codeyasam.threatmap;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -9,15 +10,26 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.View;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EditProfile extends AppCompatActivity {
+
+    private static final String PROFILE_LOADER_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/profileLoader.php";
+    private static final String PROFILE_EDITOR_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/editProfileUser.php";
 
     private static final int SELECT_FILE = 888;
     private static final int REQUEST_CAMERA = 777;
@@ -33,7 +45,7 @@ public class EditProfile extends AppCompatActivity {
         userObj = new Client_TM();
         userObj.setId(settings.getString(Session_TM.LOGGED_USER_ID, ""));
         CYM_UTILITY.setDefaultImage(EditProfile.this, R.id.displayPicture, R.drawable.defaultavatar);
-
+        new ProfileLoader().execute();
     }
 
     private Uri imageUri;
@@ -120,6 +132,118 @@ public class EditProfile extends AppCompatActivity {
             CYM_UTILITY.setImageOnView(EditProfile.this, R.id.displayPicture, bmp);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void onEditProfile(View view) {
+        if (CYM_UTILITY.getText(EditProfile.this, R.id.firstNameTxt).isEmpty() || CYM_UTILITY.getText(EditProfile.this, R.id.middleNameTxt).isEmpty() ||
+                CYM_UTILITY.getText(EditProfile.this, R.id.lastNameTxt).isEmpty() || CYM_UTILITY.getText(EditProfile.this, R.id.contactNoTxt).isEmpty()) {
+            CYM_UTILITY.mAlertDialog("Fill all required fields.", EditProfile.this);
+            return;
+        }
+        String userId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+        userObj.setId(userId);
+        userObj.setFirstName(CYM_UTILITY.getText(EditProfile.this, R.id.firstNameTxt));
+        userObj.setMiddleName(CYM_UTILITY.getText(EditProfile.this, R.id.middleNameTxt));
+        userObj.setLastName(CYM_UTILITY.getText(EditProfile.this, R.id.lastNameTxt));
+        userObj.setContactNo(CYM_UTILITY.getText(EditProfile.this, R.id.contactNoTxt));
+        new ProfileEditor().execute();
+    }
+
+    class ProfileLoader extends AsyncTask<String, String, String> {
+
+        private Client_TM clientObj;
+        private ProgressDialog progressDialog;
+
+        public ProfileLoader() {
+            progressDialog = new ProgressDialog(EditProfile.this);
+            progressDialog.setMessage("Loading Profile...");
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+        }
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                String userId = settings.getString(Session_TM.LOGGED_USER_ID, "");
+                String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+                JSONObject json = JSONParser.getJSONfromURL(PROFILE_LOADER_URL + "?userId=" + userId + "&userType=" + userType);
+                if (userType.equals("CLIENT")) {
+                    clientObj = Client_TM.instantiateJSON(json);
+                } else {
+                    clientObj = Client_TM.instantiateJSONasUser(json);
+                }
+
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            progressDialog.dismiss();
+            if (result != null) {
+                try {
+                    JSONObject json = new JSONObject(result);
+                    CYM_UTILITY.setText(EditProfile.this, R.id.firstNameTxt, clientObj.getFirstName());
+                    CYM_UTILITY.setText(EditProfile.this, R.id.middleNameTxt, clientObj.getMiddleName());
+                    CYM_UTILITY.setText(EditProfile.this, R.id.lastNameTxt, clientObj.getLastName());
+                    CYM_UTILITY.setText(EditProfile.this, R.id.contactNoTxt, clientObj.getContactNo());
+                    CYM_UTILITY.setImageOnView(EditProfile.this, R.id.displayPicture, CYM_UTILITY.getRoundedCornerBitmap(clientObj.getDisplayPicture()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    class ProfileEditor extends AsyncTask<String, String, String> {
+
+        @Override
+        protected String doInBackground(String... args) {
+            try {
+                List<NameValuePair> params = new ArrayList<>();
+                if (userObj.getDisplayPicture() != null) {
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    userObj.getDisplayPicture().compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                    String encodedImage = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
+                    params.add(new BasicNameValuePair("image", encodedImage));
+                } else {
+                    params.add(new BasicNameValuePair("display_picture", userObj.getDisplayPicturePath()));
+                }
+                String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+                params.add(new BasicNameValuePair("user_type", userType));
+                params.add(new BasicNameValuePair("user_id", userObj.getId()));
+                params.add(new BasicNameValuePair("first_name", userObj.getFirstName()));
+                params.add(new BasicNameValuePair("middle_name", userObj.getMiddleName()));
+                params.add(new BasicNameValuePair("last_name", userObj.getLastName()));
+                params.add(new BasicNameValuePair("contact_no", userObj.getContactNo()));
+                params.add(new BasicNameValuePair("submit", "true"));
+
+                JSONObject json = JSONParser.makeHttpRequest(PROFILE_EDITOR_URL, "POST", params);
+                return json.toString();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                try {
+                    JSONObject json = new JSONObject(result);
+                    if (json.getString("success").equals("true")) {
+                        CYM_UTILITY.mAlertDialog("Successfully Updated Profile.", EditProfile.this);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

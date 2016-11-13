@@ -2,10 +2,13 @@ package com.projects.codeyasam.threatmap;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
@@ -19,11 +22,14 @@ public class ViewProfile extends AppCompatActivity {
     private Client_TM clientObj;
     private static final String REQUEST_RESPONDER_URL = CYM_UTILITY.THREAT_MAP_ROOT_URL + "android/respondRequest.php";
 
+    private SharedPreferences settings;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view_profile);
         clientObj = Client_TM.clientTm;
+        settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         CYM_UTILITY.displayText(ViewProfile.this, R.id.fullName, clientObj.getFullName());
         //CYM_UTILITY.setImageOnView(ViewProfile.this, R.id.displayPicture, CYM_UTILITY.getResizedBitmap(clientObj.getDisplayPicture(), 100, 100));
         CYM_UTILITY.setImageOnView(ViewProfile.this, R.id.displayPicture, clientObj.getDisplayPicture());
@@ -32,6 +38,12 @@ public class ViewProfile extends AppCompatActivity {
         CYM_UTILITY.displayText(ViewProfile.this, R.id.identificationNo, "ID No: " + clientObj.getIdentificationNo());
         CYM_UTILITY.displayText(ViewProfile.this, R.id.emailAddr, clientObj.getEmail());
         CYM_UTILITY.displayText(ViewProfile.this, R.id.personNotify, "Person to Notify: " + clientObj.getPersonNotif());
+
+        Button respondBtn = (Button) findViewById(R.id.respondBtn);
+        String user_type = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+        if (user_type.equals("CLIENT")) {
+            respondBtn.setVisibility(View.GONE);
+        }
     }
 
     public void respondRequest(View view) {
