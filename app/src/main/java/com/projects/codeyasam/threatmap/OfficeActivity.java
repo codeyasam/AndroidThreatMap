@@ -4,6 +4,8 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -12,6 +14,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,7 +22,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -29,6 +35,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -70,6 +77,9 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
     private int count = 0;
     private long startMillis = 0;
 
+    private ListView officeListView;
+    private List<Office_TM> officeTms;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,6 +115,9 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
         }, 0, 1000);
 
         notifObj = new Notif_TM();
+        officeListView = (ListView) findViewById(R.id.listView);
+        officeTms = new ArrayList<>();
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
@@ -116,16 +129,30 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+        }
+        setupNotifObj();
         if (item.getItemId() == R.id.countryMenu) {
             for (Map.Entry<String, Office_TM> entry : hmOffices.entrySet()) {
                 Office_TM officeObj = entry.getValue();
                 Marker marker = markers.get(entry.getKey());
+                Log.i("poop", currentCountry);
                 if (!currentCountry.equals(officeObj.getCountry())) {
                     marker.setVisible(false);
                 } else {
                     marker.setVisible(true);
                 }
             }
+
+            List<Office_TM> tempList = new ArrayList<>();
+            for (Office_TM office_tm : officeTms) {
+                if (currentCountry.equals(office_tm.getCountry())) {
+                    tempList.add(office_tm);
+                }
+            }
+            ArrayAdapter<Office_TM> adapter = new OfficeAdapter(OfficeActivity.this, tempList);
+            officeListView.setAdapter(adapter);
         } else if (item.getItemId() == R.id.provinceMenu) {
             for (Map.Entry<String, Office_TM> entry : hmOffices.entrySet()) {
                 Office_TM officeObj = entry.getValue();
@@ -136,6 +163,15 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
                     marker.setVisible(true);
                 }
             }
+
+            List<Office_TM> tempList = new ArrayList<>();
+            for (Office_TM office_tm : officeTms) {
+                if (currentProvince.equals(office_tm.getProvince())) {
+                    tempList.add(office_tm);
+                }
+            }
+            ArrayAdapter<Office_TM> adapter = new OfficeAdapter(OfficeActivity.this, tempList);
+            officeListView.setAdapter(adapter);
         } else if (item.getItemId() == R.id.cityMenu) {
             for (Map.Entry<String, Office_TM> entry : hmOffices.entrySet()) {
                 Office_TM officeObj = entry.getValue();
@@ -146,6 +182,15 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
                     marker.setVisible(true);
                 }
             }
+
+            List<Office_TM> tempList = new ArrayList<>();
+            for (Office_TM office_tm : officeTms) {
+                if (currentMunicipality.equals(office_tm.getMunicipality())) {
+                    tempList.add(office_tm);
+                }
+            }
+            ArrayAdapter<Office_TM> adapter = new OfficeAdapter(OfficeActivity.this, tempList);
+            officeListView.setAdapter(adapter);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -164,6 +209,8 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
         startMillis = time;
         count++;
         if (count >= 7) {
+            Button button = (Button) findViewById(R.id.emerBtn);
+            button.setText("Sending Request...");
             count = 0;
             setupNotifObj();
             new EmergencyReporter(notifObj, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -172,6 +219,26 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
         int numReq = 7 - count;
         String prompt = "ASK FOR HELP (tap " + numReq + " times)";
         btnEmer.setText(prompt);
+    }
+
+    private boolean isOnListMode = false;
+
+    public void onSwitchView(View v) {
+        isOnListMode = !isOnListMode;
+        Button button = (Button) findViewById(R.id.switchView);
+        if (isOnListMode) {
+            ListView listView = (ListView) findViewById(R.id.listView);
+            listView.setVisibility(View.VISIBLE);
+            View fragment = findViewById(R.id.map);
+            fragment.setVisibility(View.GONE);
+            button.setText("SWITCH TO MAP VIEW");
+        } else {
+            ListView listView = (ListView) findViewById(R.id.listView);
+            listView.setVisibility(View.GONE);
+            View fragment = findViewById(R.id.map);
+            fragment.setVisibility(View.VISIBLE);
+            button.setText("SWITCH TO LIST");
+        }
     }
 
     private void setupNotifObj() {
@@ -187,6 +254,9 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
                 notifObj.setCountry(addressList.get(0).getCountryName());
                 notifObj.setLat(String.valueOf(ll.latitude));
                 notifObj.setLng(String.valueOf(ll.longitude));
+                currentCountry = notifObj.getCountry();
+                currentProvince = notifObj.getProvince();
+                currentMunicipality = notifObj.getMunicipality();
             }
 
         } catch (Exception e) {
@@ -281,7 +351,17 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
         };
     }
 
+
     class OfficeLoader extends AsyncTask<String, String, String> {
+
+        private ProgressDialog progressDialog;
+
+        public OfficeLoader() {
+            progressDialog = new ProgressDialog(OfficeActivity.this);
+            progressDialog.setMessage("Loading Offices");
+            progressDialog.setCanceledOnTouchOutside(true);
+            progressDialog.show();
+        }
 
         @Override
         protected String doInBackground(String... params) {
@@ -297,14 +377,27 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
                     JSONArray jsonArray = json.getJSONArray("allOffices");
+                    officeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                            Office_TM officeObj = officeTms.get(position);
+                            CYM_UTILITY.callYesNoMessage(officeObj.getName() + "\n Ask help from this office?", OfficeActivity.this, sendRequestSpecific(officeObj));
+                        }
+                    });
+
                     for (int i = 0; i < jsonArray.length(); i++) {
                         EachOfficeLoader task = new EachOfficeLoader(jsonArray.getJSONObject(i));
                         task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                        Office_TM officeObj = Office_TM.instantiateJSON(jsonArray.getJSONObject(i));
+                        officeTms.add(officeObj);
                     }
+                    ArrayAdapter<Office_TM> adapter = new OfficeAdapter(OfficeActivity.this, officeTms);
+                    officeListView.setAdapter(adapter);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -343,6 +436,8 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
                             .position(latLng)
                             .title(officeObj.getId());
 
+                    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.moffice);
+                    options.icon(BitmapDescriptorFactory.fromBitmap(CYM_UTILITY.getResizedBitmap(bitmap, 50, 50)));
                     markers.put(officeObj.getId(), mMap.addMarker(options));
                 } catch (Exception e) {
                     e.printStackTrace();

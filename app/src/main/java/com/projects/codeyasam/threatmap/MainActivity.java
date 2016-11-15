@@ -28,6 +28,7 @@ import android.widget.Button;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -111,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
+        runOnce = false;
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.setCanceledOnTouchOutside(true);
         progressDialog.setMessage("Loading Online Users...");
@@ -360,6 +362,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         startMillis = time;
         count++;
         if (count >= 7) {
+            Button button = (Button) findViewById(R.id.emerBtn);
+            button.setText("Sending Request...");
             count = 0;
             try {
                 LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
@@ -531,6 +535,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     class UserLogout extends AsyncTask<String, String, String> {
 
+        private ProgressDialog progressDialog;
+
+        public UserLogout() {
+            progressDialog = new ProgressDialog(MainActivity.this);
+            progressDialog.setMessage("Logging out...");
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
+        }
+
         @Override
         protected String doInBackground(String... args) {
             try {
@@ -549,16 +562,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     Log.i("poop", result);
                     JSONObject json = new JSONObject(result);
                     if (json.getString("success").equals("true")) {
-                        SharedPreferences.Editor editor = settings.edit();
-                        editor.putString(Session_TM.LOGGED_USER_ID, "");
-                        editor.commit();
-                        finish();
+
                     }
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putString(Session_TM.LOGGED_USER_ID, "");
+                    editor.commit();
+                    finish();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

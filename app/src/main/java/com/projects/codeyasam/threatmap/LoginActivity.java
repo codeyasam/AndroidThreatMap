@@ -1,5 +1,6 @@
 package com.projects.codeyasam.threatmap;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -62,10 +63,15 @@ public class LoginActivity extends AppCompatActivity {
 
         private String username;
         private String password;
+        private ProgressDialog progressDialog;
 
         public LoginLoader(String username, String password) {
             this.username = username;
             this.password = password;
+            progressDialog = new ProgressDialog(LoginActivity.this);
+            progressDialog.setMessage("Logging in...");
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.show();
         }
 
 
@@ -88,6 +94,7 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     Log.i("poop", result.toString());

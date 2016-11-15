@@ -29,6 +29,7 @@
 
     <item
         android:id="@+id/threatMenu"
+        android:icon="@drawable/mthreatnotif"
         android:title="Threats"
         android:orderInCategory="100"
         app:showAsAction="always"
@@ -36,6 +37,7 @@
 
     <item
         android:id="@+id/officeMenu"
+        android:icon="@drawable/moffice"
         android:title="Offices"
         android:orderInCategory="101"
         app:showAsAction="always"

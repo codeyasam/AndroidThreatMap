@@ -4,6 +4,8 @@ import android.*;
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -29,6 +31,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -110,6 +113,7 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         }, 0, 1000);
 
         notifObj = new Notif_TM();
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
@@ -121,41 +125,55 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.provinceMenu) {
-            String highestProvince = getHighestCount(hmProvince);
-            //Log.i("poop", "Highest Prov: " + highestProvince);
-            for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
-                Threat_TM threatObj = hmThreat.get(entry.getKey());
-                Marker marker = markers.get(entry.getKey());
-                if (!threatObj.getProvince().equals(highestProvince)) {
-                    marker.setVisible(false);
-                } else {
-                    marker.setVisible(true);
-                }
+        try {
+            Log.i("poop", "province: " + hmProvince.toString() + " Municipality: " + hmMunicipality.toString());
+            if (item.getItemId() == R.id.provinceMenu) {
+                String highestProvince = getHighestCount(hmProvince);
+                int highestProvinceCount = hmProvince.get(highestProvince);
+                //Log.i("poop", "Highest Prov: " + highestProvinceCount);
+                for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
+                    Threat_TM threatObj = hmThreat.get(entry.getKey());
+                    Marker marker = markers.get(entry.getKey());
+                    //Log.i("poop", "count: " + hmProvince.get(threatObj.getProvince()) + " " + highestProvinceCount);
+                    //if (!threatObj.getProvince().equals(highestProvince)) {
 
-            }
-        } else if (item.getItemId() == R.id.cityMenu) {
-            String highestMuncipality = getHighestCount(hmMunicipality);
-            for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
-                Threat_TM threaObj = hmThreat.get(entry.getKey());
-                Marker marker = markers.get(entry.getKey());
-                if (!threaObj.getMunicipality().equals(highestMuncipality)) {
-                    marker.setVisible(false);
-                } else {
-                    marker.setVisible(true);
+                    if (hmProvince.get(threatObj.getProvince()) != highestProvinceCount) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+
                 }
-            }
-        } else if (item.getItemId() == R.id.countryMenu) {
-            String highestCountry = getHighestCount(hmCountry);
-            for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
-                Threat_TM threaObj = hmThreat.get(entry.getKey());
-                Marker marker = markers.get(entry.getKey());
-                if (!threaObj.getCountry().equals(highestCountry)) {
-                    marker.setVisible(false);
-                } else {
-                    marker.setVisible(true);
+            } else if (item.getItemId() == R.id.cityMenu) {
+                String highestMuncipality = getHighestCount(hmMunicipality);
+                int highestMunicipalityCount = hmMunicipality.get(highestMuncipality);
+                for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
+                    Threat_TM threaObj = hmThreat.get(entry.getKey());
+                    Marker marker = markers.get(entry.getKey());
+                    //if (!threaObj.getMunicipality().equals(highestMuncipality)) {
+                    //Log.i("poop", "count: " + hmMunicipality.get(threaObj.getMunicipality()) + " " + highestMunicipalityCount);
+                    if (hmMunicipality.get(threaObj.getMunicipality()) != highestMunicipalityCount) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
                 }
+            } else if (item.getItemId() == R.id.countryMenu) {
+                String highestCountry = getHighestCount(hmCountry);
+                for (Map.Entry<String, Threat_TM> entry : hmThreat.entrySet()) {
+                    Threat_TM threaObj = hmThreat.get(entry.getKey());
+                    Marker marker = markers.get(entry.getKey());
+                    if (!threaObj.getCountry().equals(highestCountry)) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+                }
+            } else if (item.getItemId() == android.R.id.home) {
+                finish();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return super.onOptionsItemSelected(item);
@@ -175,6 +193,8 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         startMillis = time;
         count++;
         if (count >= 7) {
+            Button button = (Button) findViewById(R.id.emerBtn);
+            button.setText("Sending Request...");
             count = 0;
             try {
                 LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
@@ -285,6 +305,15 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
 
     class ThreatLoader extends AsyncTask<String, String, String> {
 
+        private ProgressDialog progressDialog;
+
+        public ThreatLoader() {
+            progressDialog = new ProgressDialog(ThreatActivity.this);
+            progressDialog.setMessage("Loading Threats...");
+            progressDialog.setCanceledOnTouchOutside(true);
+            progressDialog.show();
+        }
+
         @Override
         protected String doInBackground(String... args) {
             try {
@@ -299,6 +328,7 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
@@ -369,6 +399,8 @@ public class ThreatActivity extends AppCompatActivity implements OnMapReadyCallb
                         .position(latLng)
                         .snippet(threatObj.getDescription());
 
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.mthreatnotif);
+                options.icon(BitmapDescriptorFactory.fromBitmap(CYM_UTILITY.getResizedBitmap(bitmap, 50, 50)));
                 Marker marker = mMap.addMarker(options);
                 markers.put(threatObj.getId(), marker);
             } catch (Exception e) {

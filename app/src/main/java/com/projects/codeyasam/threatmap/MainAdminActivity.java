@@ -1,6 +1,7 @@
 package com.projects.codeyasam.threatmap;
 
 import android.*;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -199,6 +200,15 @@ public class MainAdminActivity extends AppCompatActivity implements OnMapReadyCa
 
     class RequestsLoader extends AsyncTask<String, String, String> {
 
+        private ProgressDialog progressDialog;
+
+        public RequestsLoader() {
+            progressDialog = new ProgressDialog(MainAdminActivity.this);
+            progressDialog.setMessage("Loading Emergencies");
+            progressDialog.setCanceledOnTouchOutside(true);
+            progressDialog.show();
+        }
+
         @Override
         protected String doInBackground(String... params) {
             try {
@@ -215,6 +225,7 @@ public class MainAdminActivity extends AppCompatActivity implements OnMapReadyCa
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
