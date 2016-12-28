@@ -2,6 +2,7 @@ package com.projects.codeyasam.threatmap;
 
 import android.*;
 import android.Manifest;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -87,24 +88,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         hmOnlineClients = new HashMap<>();
         btnEmer = (Button) findViewById(R.id.emerBtn);
         btnEmer.setEnabled(false);
-        Timer btnTimer = new Timer();
-        btnTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        long time = System.currentTimeMillis();
-                        if (startMillis == 0 || time-startMillis > 3000) {
-                            String prompt = "ASK FOR HELP (Tap 7 times)";
-                            btnEmer.setText(prompt);
-                            count = 0;
-                        }
-                    }
-                });
-
-            }
-        }, 0, 1000);
+//        Timer btnTimer = new Timer();
+//        btnTimer.scheduleAtFixedRate(new TimerTask() {
+//            @Override
+//            public void run() {
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        long time = System.currentTimeMillis();
+//                        if (startMillis == 0 || time-startMillis > 3000) {
+//                            String prompt = "ASK FOR HELP (Tap 7 times)";
+//                            btnEmer.setText(prompt);
+//                            count = 0;
+//                        }
+//                    }
+//                });
+//
+//            }
+//        }, 0, 1000);
 
         notifObj = new Notif_TM();
     }
@@ -148,17 +149,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         } else if (item.getItemId() == R.id.threatMenu) {
             Intent intent = new Intent(getApplicationContext(), ThreatActivity.class);
             startActivity(intent);
+            mMap.clear();
         } else if (item.getItemId() == R.id.officeMenu) {
             Intent intent = new Intent(getApplicationContext(), OfficeActivity.class);
             startActivity(intent);
+            mMap.clear();
         } else if (item.getItemId() == R.id.editProfile) {
             Intent intent = new Intent(MainActivity.this, EditProfile.class);
             startActivity(intent);
+            mMap.clear();
         } else if (item.getItemId() == R.id.deleteAccoutn) {
             CYM_UTILITY.callYesNoMessage("Are you sure you want to delete your account?", MainActivity.this, deleteAccount());
         } else if (item.getItemId() == R.id.changePassword) {
             Intent intent = new Intent(MainActivity.this, ChangePassword.class);
             startActivity(intent);
+            mMap.clear();
         }
         return super.onOptionsItemSelected(item);
     }
@@ -350,6 +355,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             progressDialog.dismiss();
+            //Log.i("poop", result);
             CYM_UTILITY.mAlertDialog("Request Sent!", MainActivity.this);
         }
 
@@ -358,37 +364,50 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private int count = 0;
     private long startMillis = 0;
     public void reportEmer(View v) {
-        long time = System.currentTimeMillis();
-        startMillis = time;
-        count++;
-        if (count >= 7) {
-            Button button = (Button) findViewById(R.id.emerBtn);
-            button.setText("Sending Request...");
-            count = 0;
-            try {
-                LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-                List<Address> addressList = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
-                if (addressList.size() > 0) {
-                    notifObj.setAddress(addressList.get(0).getAddressLine(0) + ", " + addressList.get(0).getLocality() + ", " + addressList.get(0).getSubAdminArea() + ", " + addressList.get(0).getCountryName());
-                    notifObj.setClient_id(settings.getString(Session_TM.LOGGED_USER_ID, ""));
-                    notifObj.setMunicipality(addressList.get(0).getLocality());
-                    notifObj.setProvince(addressList.get(0).getSubAdminArea());
-                    notifObj.setCountry(addressList.get(0).getCountryName());
-                    notifObj.setLat(String.valueOf(ll.latitude));
-                    notifObj.setLng(String.valueOf(ll.longitude));
+        CYM_UTILITY.callYesNoMessage("Confirmation Required: Send Request to all nearest offices?", MainActivity.this, sendRequestToAllNearest());
+//        long time = System.currentTimeMillis();
+//        startMillis = time;
+//        count++;
+//        if (count >= 7) {
+//            count = 0;
+
+
+//        }
+
+//        int numReq = 7 - count;
+//        String prompt = "ASK FOR HELP (tap " + numReq + " times)";
+//        btnEmer.setText(prompt);
+//        if (numReq >= 7) {
+//            prompt = "Sending Request...";
+//            btnEmer.setText(prompt);
+//        }
+    }
+
+    private Dialog.OnClickListener sendRequestToAllNearest() {
+        return new Dialog.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                    LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                    Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+                    List<Address> addressList = geocoder.getFromLocation(ll.latitude, ll.longitude, 1);
+                    if (addressList.size() > 0) {
+                        notifObj.setAddress(addressList.get(0).getAddressLine(0) + ", " + addressList.get(0).getLocality() + ", " + addressList.get(0).getSubAdminArea() + ", " + addressList.get(0).getCountryName());
+                        notifObj.setClient_id(settings.getString(Session_TM.LOGGED_USER_ID, ""));
+                        notifObj.setMunicipality(addressList.get(0).getLocality());
+                        notifObj.setProvince(addressList.get(0).getSubAdminArea());
+                        notifObj.setCountry(addressList.get(0).getCountryName());
+                        notifObj.setLat(String.valueOf(ll.latitude));
+                        notifObj.setLng(String.valueOf(ll.longitude));
+                    }
+
+                    new EmergencyReporter(notifObj).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-                new EmergencyReporter(notifObj).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-
-        }
-
-        int numReq = 7 - count;
-        String prompt = "ASK FOR HELP (tap " + numReq + " times)";
-        btnEmer.setText(prompt);
+        };
     }
 
     @Override
@@ -407,7 +426,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (mLastLocation != null) {
             LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 10);
+            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 15);
             mMap.moveCamera(update);
             btnEmer.setEnabled(true);
             //new OnlineClientsLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

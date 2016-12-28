@@ -186,8 +186,9 @@ public class Client_TM {
             clientTm.identificationNo = json.getString("identification_number");
             clientTm.email = json.getString("email");
             clientTm.personNotif = json.getString("person_to_notify");
-            clientTm.setDisplayPicturePath(CYM_UTILITY.THREAT_MAP_ROOT_URL + json.getString("display_picture"));
-            clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(clientTm.getDisplayPicturePath()));
+            clientTm.relation = json.getString("relationship");
+            clientTm.setDisplayPicturePath(json.getString("display_picture"));
+            clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(CYM_UTILITY.THREAT_MAP_ROOT_URL + clientTm.getDisplayPicturePath()));
             return clientTm;
         } catch (Exception e) {
             e.printStackTrace();
@@ -207,8 +208,8 @@ public class Client_TM {
             clientTm.address = json.getString("address");
             clientTm.contactNo = json.getString("contact_no");
             clientTm.email = json.getString("email");
-            clientTm.setDisplayPicturePath(CYM_UTILITY.THREAT_MAP_ROOT_URL + json.getString("display_picture"));
-            clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(clientTm.getDisplayPicturePath()));
+            clientTm.setDisplayPicturePath(json.getString("display_picture"));
+            clientTm.setDisplayPicture(CYM_UTILITY.getBitmapFromUrl(CYM_UTILITY.THREAT_MAP_ROOT_URL + clientTm.getDisplayPicturePath()));
             return clientTm;
         } catch (Exception e) {
             e.printStackTrace();

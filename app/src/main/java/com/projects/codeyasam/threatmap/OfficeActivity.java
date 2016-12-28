@@ -1,5 +1,6 @@
 package com.projects.codeyasam.threatmap;
 
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -95,24 +96,24 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
 
         btnEmer = (Button) findViewById(R.id.emerBtn);
         btnEmer.setEnabled(false);
-        Timer btnTimer = new Timer();
-        btnTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        long time = System.currentTimeMillis();
-                        if (startMillis == 0 || time-startMillis > 3000) {
-                            String prompt = "ASK FOR HELP (Tap 7 times)";
-                            btnEmer.setText(prompt);
-                            count = 0;
-                        }
-                    }
-                });
-
-            }
-        }, 0, 1000);
+//        Timer btnTimer = new Timer();
+//        btnTimer.scheduleAtFixedRate(new TimerTask() {
+//            @Override
+//            public void run() {
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        long time = System.currentTimeMillis();
+//                        if (startMillis == 0 || time-startMillis > 3000) {
+//                            String prompt = "ASK FOR HELP (Tap 7 times)";
+//                            btnEmer.setText(prompt);
+//                            count = 0;
+//                        }
+//                    }
+//                });
+//
+//            }
+//        }, 0, 1000);
 
         notifObj = new Notif_TM();
         officeListView = (ListView) findViewById(R.id.listView);
@@ -205,20 +206,31 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
     }
 
     public void reportEmer(View v) {
-        long time = System.currentTimeMillis();
-        startMillis = time;
-        count++;
-        if (count >= 7) {
-            Button button = (Button) findViewById(R.id.emerBtn);
-            button.setText("Sending Request...");
-            count = 0;
-            setupNotifObj();
-            new EmergencyReporter(notifObj, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
+        CYM_UTILITY.callYesNoMessage("Confirmation Required: Send Request to all nearest offices?", OfficeActivity.this, sendRequestToAllNearest());
+//        long time = System.currentTimeMillis();
+//        startMillis = time;
+//        count++;
+//        if (count >= 7) {
+//            Button button = (Button) findViewById(R.id.emerBtn);
+//            button.setText("Sending Request...");
+//            count = 0;
 
-        int numReq = 7 - count;
-        String prompt = "ASK FOR HELP (tap " + numReq + " times)";
-        btnEmer.setText(prompt);
+        //}
+
+//        int numReq = 7 - count;
+//        String prompt = "ASK FOR HELP (tap " + numReq + " times)";
+//        btnEmer.setText(prompt);
+    }
+
+    private Dialog.OnClickListener sendRequestToAllNearest() {
+      return new Dialog.OnClickListener() {
+
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+              setupNotifObj();
+              new EmergencyReporter(notifObj, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+          }
+      };
     }
 
     private boolean isOnListMode = false;
@@ -279,7 +291,7 @@ public class OfficeActivity extends AppCompatActivity implements OnMapReadyCallb
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (mLastLocation != null) {
             LatLng ll = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 10);
+            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(ll, 15);
             mMap.moveCamera(update);
             btnEmer.setEnabled(true);
             new OfficeLoader().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

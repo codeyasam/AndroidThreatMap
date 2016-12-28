@@ -21,6 +21,16 @@
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:text=""
+            android:hint="Identification No."
+            android:ems="10"
+            android:id="@+id/identificationTxt"
+            android:visibility="gone" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:id="@+id/firstNameTxt"
             android:hint="First Name"
             android:layout_gravity="center_horizontal" />
@@ -45,6 +55,26 @@
             android:id="@+id/contactNoTxt"
             android:hint="Contact No"
             android:layout_gravity="center_horizontal" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:text=""
+            android:hint="Person to notify"
+            android:ems="10"
+            android:id="@+id/personNotifyTxt"
+            android:visibility="gone"/>
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:text=""
+            android:hint="Relation with person to notify"
+            android:ems="10"
+            android:id="@+id/relationTxt"
+            android:visibility="gone" />
 
         <Button
             android:layout_width="match_parent"

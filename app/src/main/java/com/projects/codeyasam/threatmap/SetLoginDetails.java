@@ -117,7 +117,6 @@ public class SetLoginDetails extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
@@ -132,6 +131,7 @@ public class SetLoginDetails extends AppCompatActivity {
                             CYM_UTILITY.mAlertDialog(json.getString("msg"), SetLoginDetails.this);
                         } else {
                             CYM_UTILITY.mAlertDialog("Failed to create an account, try again.", SetLoginDetails.this);
+                            Log.i("poop", "hey" + json.getString("success"));
                         }
                     }
                 } catch (Exception e) {

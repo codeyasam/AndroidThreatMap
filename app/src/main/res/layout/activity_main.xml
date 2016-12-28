@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:background="@color/colorPrimaryDark"
         android:textColor="@color/colorPrimary"
-        android:text="ASK FOR HELP (tap 7 times)"
+        android:text="ASK FOR HELP"
         android:id="@+id/emerBtn"
         android:onClick="reportEmer"
         android:layout_margin="10dp"

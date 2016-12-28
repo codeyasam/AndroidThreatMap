@@ -16,7 +16,9 @@ import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
@@ -45,6 +47,16 @@ public class EditProfile extends AppCompatActivity {
         userObj = new Client_TM();
         userObj.setId(settings.getString(Session_TM.LOGGED_USER_ID, ""));
         CYM_UTILITY.setDefaultImage(EditProfile.this, R.id.displayPicture, R.drawable.defaultavatar);
+
+        String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+        if (userType.equals("CLIENT")) {
+            EditText identificationTxt = (EditText) findViewById(R.id.identificationTxt);
+            EditText personToNotifyTxt = (EditText) findViewById(R.id.personNotifyTxt);
+            EditText relationTxt = (EditText) findViewById(R.id.relationTxt);
+            identificationTxt.setVisibility(View.VISIBLE);
+            personToNotifyTxt.setVisibility(View.VISIBLE);
+            relationTxt.setVisibility(View.VISIBLE);
+        }
         new ProfileLoader().execute();
     }
 
@@ -147,6 +159,21 @@ public class EditProfile extends AppCompatActivity {
         userObj.setMiddleName(CYM_UTILITY.getText(EditProfile.this, R.id.middleNameTxt));
         userObj.setLastName(CYM_UTILITY.getText(EditProfile.this, R.id.lastNameTxt));
         userObj.setContactNo(CYM_UTILITY.getText(EditProfile.this, R.id.contactNoTxt));
+
+        String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+        if (userType.equals("CLIENT")) {
+            if (CYM_UTILITY.getText(EditProfile.this, R.id.identificationTxt).isEmpty() ||
+                    CYM_UTILITY.getText(EditProfile.this, R.id.personNotifyTxt).isEmpty() ||
+                    CYM_UTILITY.getText(EditProfile.this, R.id.relationTxt).isEmpty()) {
+
+                CYM_UTILITY.mAlertDialog("Fill all required fields.", EditProfile.this);
+                return;
+            }
+            userObj.setIdentificationNo(CYM_UTILITY.getText(EditProfile.this, R.id.identificationTxt));
+            userObj.setPersonNotif(CYM_UTILITY.getText(EditProfile.this, R.id.personNotifyTxt));
+            userObj.setRelation(CYM_UTILITY.getText(EditProfile.this, R.id.relationTxt));
+        }
+
         new ProfileEditor().execute();
     }
 
@@ -173,7 +200,8 @@ public class EditProfile extends AppCompatActivity {
                 } else {
                     clientObj = Client_TM.instantiateJSONasUser(json);
                 }
-
+                userObj.setDisplayPicture(null);
+                userObj.setDisplayPicturePath(clientObj.getDisplayPicturePath());
                 return json.toString();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -193,6 +221,13 @@ public class EditProfile extends AppCompatActivity {
                     CYM_UTILITY.setText(EditProfile.this, R.id.lastNameTxt, clientObj.getLastName());
                     CYM_UTILITY.setText(EditProfile.this, R.id.contactNoTxt, clientObj.getContactNo());
                     CYM_UTILITY.setImageOnView(EditProfile.this, R.id.displayPicture, CYM_UTILITY.getRoundedCornerBitmap(clientObj.getDisplayPicture()));
+
+                    String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
+                    if (userType.equals("CLIENT")) {
+                        CYM_UTILITY.setText(EditProfile.this, R.id.identificationTxt, clientObj.getIdentificationNo());
+                        CYM_UTILITY.setText(EditProfile.this, R.id.personNotifyTxt, clientObj.getPersonNotif());
+                        CYM_UTILITY.setText(EditProfile.this, R.id.relationTxt, clientObj.getRelation());
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -202,16 +237,27 @@ public class EditProfile extends AppCompatActivity {
 
     class ProfileEditor extends AsyncTask<String, String, String> {
 
+        private ProgressDialog progressDialog;
+
+        public ProfileEditor() {
+            progressDialog = new ProgressDialog(EditProfile.this);
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.setMessage("Updating Profile...");
+            progressDialog.show();
+        }
+
         @Override
         protected String doInBackground(String... args) {
             try {
                 List<NameValuePair> params = new ArrayList<>();
                 if (userObj.getDisplayPicture() != null) {
+                    Log.i("poop", "has dp");
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     userObj.getDisplayPicture().compress(Bitmap.CompressFormat.JPEG, 100, stream);
                     String encodedImage = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
                     params.add(new BasicNameValuePair("image", encodedImage));
                 } else {
+                    Log.i("poop", "has no dp");
                     params.add(new BasicNameValuePair("display_picture", userObj.getDisplayPicturePath()));
                 }
                 String userType = settings.getString(Session_TM.LOGGED_USER_TYPE, "");
@@ -222,6 +268,12 @@ public class EditProfile extends AppCompatActivity {
                 params.add(new BasicNameValuePair("last_name", userObj.getLastName()));
                 params.add(new BasicNameValuePair("contact_no", userObj.getContactNo()));
                 params.add(new BasicNameValuePair("submit", "true"));
+
+                if (userType.equals("CLIENT")) {
+                    params.add(new BasicNameValuePair("identification_no", userObj.getIdentificationNo()));
+                    params.add(new BasicNameValuePair("person_to_notify", userObj.getPersonNotif()));
+                    params.add(new BasicNameValuePair("relationship", userObj.getRelation()));
+                }
 
                 JSONObject json = JSONParser.makeHttpRequest(PROFILE_EDITOR_URL, "POST", params);
                 return json.toString();
@@ -234,11 +286,13 @@ public class EditProfile extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
                     if (json.getString("success").equals("true")) {
                         CYM_UTILITY.mAlertDialog("Successfully Updated Profile.", EditProfile.this);
+
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

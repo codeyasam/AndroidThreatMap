@@ -1,5 +1,6 @@
 package com.projects.codeyasam.threatmap;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -61,6 +62,15 @@ public class ViewProfile extends AppCompatActivity {
 
     class RequestResponder extends AsyncTask<String, String, String> {
 
+        private ProgressDialog progressDialog;
+
+        public RequestResponder() {
+            progressDialog = new ProgressDialog(ViewProfile.this);
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.setMessage("Responding to Request...");
+            progressDialog.show();
+        }
+
         @Override
         protected String doInBackground(String... args) {
             try {
@@ -79,6 +89,7 @@ public class ViewProfile extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            progressDialog.dismiss();
             if (result != null) {
                 try {
                     JSONObject json = new JSONObject(result);
